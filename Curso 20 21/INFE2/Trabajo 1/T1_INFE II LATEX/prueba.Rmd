@@ -1,0 +1,138 @@
+---
+title: "Práctica 1"
+author: "Pablo Marcos Parra / Sofía Mara Rivas Cuevas"
+date: "3/11/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Enunciado de la práctica
+
+Considerar una muestra aleatoria de tamaño n = 30 de una población cuya distribución es una mixtura
+de dos distribuciones exponenciales con funciones de densidad:
+<center>
+![](funciones.png)
+</center>
+y proporciones p y 1-p respectivamente los datos observados son los siguientes:
+
+```{r}
+y<-c(0.92169370,0.20110924,0.08299092,1.27148296,0.08975299,2.49922718
+     ,4.34097682,0.39260263,0.06973844,0.05284850,0.40770048,0.03917915
+     ,0.19068404,1.26898667,0.53213247,0.52049674,0.22417266,0.18774498
+     ,0.16727780,0.44944121,1.10100809,0.84404590,0.66023800,2.86944266
+     ,0.08869227,0.85046707,0.41026355,0.28243983,0.07341746,0.10278472)
+```
+
+## Apartado A
+
+**Obtener intervalos de confianza, de Wald, para p, con confianza 0.95.**
+
+Para calcular el EMV de p vamos a utilizar la función *optim* de R.
+La función de la mixtura es:
+<center>
+![](mixtura.PNG)
+</center>
+La función de verosimilitud es: 
+<center>
+![](verosimilitud.PNG)
+</center>
+A la hora de pasarlo a R usaremos la menos log-verosimilitud (de aquí en adelante nos referiremos a ella como *mlv*) y utilizando la función mencionada anteriormente calcularemos el EMV:
+```{r}
+f1<-function(y){
+  return(dexp(y,1))
+}
+f2<-function(y){
+  return(dexp(y,2))
+}
+mlv<-function(p){
+  (-sum(log(p*f1(y)+(1-p)*f2(y))))
+}
+minimo<-optim(0.25,mlv,method="Brent",lower = 0, upper = 1,hessian = T)
+EMV<-minimo$par
+V<-as.numeric(solve(minimo$hessian))
+I.C<-c(EMV-qnorm(0.975,0,1)*sqrt(V),EMV+qnorm(0.975,0,1)*sqrt(V))
+```
+
+**EMV=**
+```{r echo=FALSE}
+EMV
+
+```
+**I.C de Wald=**
+```{r echo=FALSE}
+I.C
+
+```
+La raíz de la varianza no está acotada y se nos puede ir a menos infinito, como se trata de una proporción el intervalo tiene que estar entre 0 y 1.
+
+## Apartado B
+**Obtener el p-valor del test de razón de verosimilitud para contrastar la hipótesis nula, *H0: p=0.5*.**
+
+La razón de verosimilitud es: 
+<center>
+![](razon de verosimilitud.png)
+</center>
+El estadístico razón de verosimilitud viene dado por: 
+<center>
+![](estadistico.png)
+</center>
+Obtenemos el p-valor pedido con el siguiente código:
+```{r}
+Tobs<--2*(minimo$value -mlv(0.5))
+pvalor<-1-pchisq(Tobs,1)
+```
+**P-Valor=**
+```{r echo=FALSE}
+pvalor
+```
+## Apartado C
+**Utilizar el algoritmo EM para aproximar el estimador máximo verosímil de p, utilizando el valor inicial 0.5 y 25 iteraciones.**
+
+Obtendremos la densidad de los datos completos. Como tenemos solo los datos observados no sabemos la probabilidad con la que aparecerán *f1* y *f2* así que para sacar los datos completos usaremos *bi*:
+
+<center>
+![](funcionap3.PNG)
+</center>
+
+Luego la función de verosimilitud de los datos completos es: 
+<center>
+![](verosimilituddatos.PNG)
+</center>
+Y su función log-verosimilitud: 
+<center>
+![](logverosimilitud.PNG)
+</center>
+### Paso E
+![](pasoe.PNG)
+Y tras sacar la esperanza condicionada de la fórmula obtenemos:
+<center>
+![](pasoe2.PNG)
+</center>
+### Paso M
+Para el paso M hay que derivar con respecto de p y para maximizar, igualar a 0:
+<center>
+![](pasom.PNG)
+
+![](pasom2.PNG)
+</center>
+
+En R queda:
+```{r echo=TRUE}
+DO<-function(y,p){
+  return(p*f1(y)+(1-p)*f2(y))
+}
+p<-0.5 #valor inicial de p
+n<-length(y)#tamaño datos
+for(i in 1:25){
+  p<-(1/n)*sum(p*f1(y)/DO(y,p)) 
+}
+```
+```{r echo=FALSE}
+p
+```

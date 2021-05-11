@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <style>
+            table {overflow-y: auto;border: 1px solid black;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;width: 100%;}
+            th, td{border: 1px solid black;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
+            #lista{width: 400px;height:400px;overflow-y: scroll;}
+        </style>
+        <title>Ranking de felicidad por países :)</title>
+        <meta charset="utf-8">
+        <script src="d3.v5.min.js"></script>
+    </head>
+    <body style="width: 100%; height: 100%;">
+        <h1 style="text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Puntuacion de felicidad por paises :)</h1>
+        <div id="contenedor">
+            <div id="grafico" style="float: left;">
+            </div>
+            <div id="ranking" style="float: left;">
+                <label style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Orden</label>
+                <select id="orden" >
+                <option selected value="masfeliz">Top países más felices</option>
+                <option value="menosfeliz">Top países más infelices</option>
+                </select>
+                <div id="lista"></div>
+            </div>
+        </div>
+        <div id="valores" style="clear: both;">
+	    <div>
+		    <label style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Región</label>
+		    <select id="region" >
+			<option selected value="mundo">Mundo</option>
+			<option value="europe">Europa</option>
+            <option value="northamerica">Norteamérica</option>
+            <option value="southamerica">Sudamérica</option>
+            <option value="asia">Asia</option>
+            <option value="africa">África</option>
+            <option value="oceania">Oceanía</option>
+		    </select>
+		    <br>
+            <label style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Año</label>
+            <input type="radio" name="year" value="2015" checked>
+            <label for="2015">2015</label>
+            <input type="radio" name="year" value="2016">
+            <label for="2016">2016</label>
+            <input type="radio" name="year" value="2017">
+            <label for="2017">2017</label>
+            <input type="radio" name="year" value="2018">
+            <label for="2018">2018</label>
+            <input type="radio" name="year" value="2019">
+            <label for="2019">2019</label>
+	    </div>
+	    <div id="sources" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+			Sources: <a href="https://www.kaggle.com/unsdsn/world-happiness">World Happiness Report</a> / <a href="https://geojson-maps.ash.ms/">Ash Kyd GeoJSON</a>
+	    </div>
+	</div>
+        <script src="prueba.js" async defer></script>
+    </body>
+</html>

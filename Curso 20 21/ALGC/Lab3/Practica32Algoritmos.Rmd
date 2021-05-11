@@ -1,0 +1,367 @@
+---
+title: "Practica 3 Resultados"
+author: "Pablo Marcos Parra"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Tipos de funciones
+
+Con el programa de la práctiva Lab 3.1 funcionando, vamos a probar qué pasa con otras funciones ejecutando el algoritmo voraz con diversos puntos de inicio aleatorios:
+
+Determina experimental y visualmente para que funciones de las siguientes el algoritmo voraz de Hill Climbing siempre devuelve el máximo global de la función en el rango [0:PI][0:PI], y en cuáles depende de la posición inicial escogida al azar:
+
+Debemos asegurarnos de que los experimentos realizados con números aleatorios son reproducibles. Recuerda utilizar semillas y anotar esos valores.
+\begin{itemize}
+  \item f1(x,y) = sin(x) + cos(y) + sin(x) * cos(y) + sin(x*2)
+  \item f2(x,y) = 2 * sin(x) * cos(y/2) + x +  log( abs(y-pi/2))
+  \item f3(x,y) = sin(x) * cos(y) + sqrt(x*y)
+  \item f4(x,y) =  sin( x*7 ) + cos( (y+pi/4)*4 ) + (x+y)
+\end{itemize}
+
+Yo he decidido crear matrices 1000x1000 ya que por encima de ese tamaño, bien por la máquina o bien por mi implementación, el programa tarda mucho tiempo tanto en crear las matrices como en dibujarlas.
+Para crear las matrices usamos el siguiente codigo:
+```{r}
+#Importamos librerias que nos van a ser utiles a la hora de representar las gráficas
+library(RColorBrewer)
+library(reshape2)
+library(viridis)
+
+palette(plasma(30)) #paleta de colores
+set.seed(69420)#Establecemos una semilla para que los experimentos sean reproducibles
+n<-1000#numero de puntos
+x<-seq(0,pi,length.out = n)
+y<-x
+funcion1<-function(x,y,n){
+  res<-c()
+  for(i in x){
+    fil<-c()
+    for (j in y){
+      fil<-append(fil,sin(i)+cos(j)+sin(i)*cos(j)+sin(i*2))
+    }
+    res<-rbind(res,fil)
+  }
+  rownames(res)<-x #titulos de las filas son los valores de x
+  colnames(res)<-y #titulos de las columnas son los valores de y
+  return(res)
+}
+funcion2<-function(x,y,n){
+  res<-c()
+  for(i in x){
+    fil<-c()
+    for (j in y){
+      fil<-append(fil,2*sin(i)*cos(j/2)+i+log(abs(j-pi/2)))
+    }
+    res<-rbind(res,fil)
+  }
+  rownames(res)<-x #titulos de las filas son los valores de x
+  colnames(res)<-y #titulos de las columnas son los valores de y
+  return(res)
+}
+funcion3<-function(x,y,n){
+  res<-c()
+  for(i in x){
+    fil<-c()
+    for (j in y){
+      fil<-append(fil,sin(i)*cos(j)+sqrt(i*j))
+    }
+    res<-rbind(res,fil)
+  }
+  rownames(res)<-x #titulos de las filas son los valores de x
+  colnames(res)<-y #titulos de las columnas son los valores de y
+  return(res)
+}
+funcion4<-function(x,y,n){
+  res<-c()
+  for(i in x){
+    fil<-c()
+    for (j in y){
+      fil<-append(fil,sin(i*7)+cos((j+pi/4)*4)+(i+j))
+    }
+    res<-rbind(res,fil)
+  }
+  rownames(res)<-x #titulos de las filas son los valores de x
+  colnames(res)<-y #titulos de las columnas son los valores de y
+  return(res)
+}
+```
+
+# Añadiendo algoritmo probabilístico (Método Monte-Carlo)
+
+La variante de paracaidistas aplica un método Monte-Carlo junto con el algoritmo de Hill Climbing para tratar de encontrar el máximo global de la función en los casos en los que una única ejecución del algoritmo voraz no puede asegurar tener la respuesta correcta. Esta variante realiza la búsqueda voraz con múltiples puntos de inicio escogidos al azar.
+\begin{enumerate}
+  \item Envolver el algoritmo voraz en un bucle en el que se vayan escogiendo aleatoriamenten p puntos (p: parámetro de entrada), con los que iniciar una y otra vez la búsqueda. 
+  \item Pintar en cada vuelta el mapa de calor de la matriz superponiendo en cada vuelta la nueva ruta calculada. Al final se tienen que ver todas las rutas sobre el mapa de calor.
+  \item El resultado final del algoritmo será el mayor valor encontrado por cualquiera de las búsquedas.
+  \item Ejecutar para un número de puntos suficientemente grande para cada función.
+\end{enumerate}
+En mi caso este es el código con el que he conseguido crear este algoritmo:
+```{r}
+pintar<-function(matriz,m){
+  datos<-melt(matriz)
+  representacion<-matriz
+  #Añadimos los bordes para evitar errores
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  #Sacamos una lista "aleatoria" de puntos
+  xs<-sample(1:n,m)
+  ys<-sample(1:n,m)
+  maximo<--100
+  #Representamos el gráfico
+  image(x,y,representacion,col=plasma(30))
+  #Soltamos los paracaidistas m veces
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i]) #Elegimos el punto de inicio
+    representacion[ini[1],ini[2]]<-"green"
+    points(x[ini[1]],y[ini[2]],col="green",pch=15,cex=1000/n) 
+    #Mientras el maximo (relativo o absoluto) no se haya encontrado lo busca
+    while(1){
+      valores<-c(matriz[ini[1],ini[2]],matriz[ini[1]+1,ini[2]],
+                 matriz[ini[1]-1,ini[2]],matriz[ini[1],ini[2]+1],matriz[ini[1],ini[2]-1])
+      maximorel<-max(valores)#Escogemos el maximo de los 5 puntos
+      valmax<-which.max(valores)#Devolvemos el indice donde está el máximo
+      if (valmax==1){
+        #Si hemos encontrado un maximo local
+        representacion[ini[1]-1,ini[2]-1]<-"red"
+        points(x[ini[1]-1],y[ini[2]-1],col="red",pch=15,cex=1000/n) 
+        break;
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+        #Dibujamos el camino
+        representacion[ini[1]-1,ini[2]-1]<-"black"
+        points(x[ini[1]-1],y[ini[2]-1],col="black",pch=15,cex=500/n) 
+      }
+    }
+    #Comprobamos si es un maximo absoluto o solo local
+    if(maximorel>maximo){
+      maximo<-maximorel
+      coordenadas<-c(ini[1]-1, ini[2]-1)
+    }
+  }
+  maximo<-c(maximo,coordenadas)
+  return(maximo)#Devolvemos el valor del maximo y el punto en el que esta en la matriz
+}
+```
+Al ejecutarlo con las cuatro funciones obtenemos:
+```{r}
+matriz1<-funcion1(x,y,n)
+maximos<-rbind(pintar(matriz1,5))
+matriz2<-funcion2(x,y,n)
+maximos<-rbind(maximos,pintar(matriz2,10))
+matriz3<-funcion3(x,y,n)
+maximos<-rbind(maximos,pintar(matriz3,5))
+matriz4<-funcion4(x,y,n)
+maximos<-rbind(maximos,pintar(matriz4,35))
+```
+Obtenemos como resultado los siguientes máximos globales con sus correspondientes coordenadas X e Y:
+```{r echo=FALSE}
+colnames(maximos)<-c("Valor","X","Y")
+rownames(maximos)<-c("f1","f2","f3","f4")
+maximos
+```
+# Preguntas
+## Pregunta 1: Determinar visual y experimentalmente en cuáles de las funciones anteriores hay una forma obvia de calcular la probabilidad de haber encontrado el máximo global de la función en el rango [0:PI][0:PI] en función del número de puntos p escogidos al azar.
+Como se puede observar en las gráficas, para las funciones 1 y 3 es fácil calcular la probabilidad de hallar el máximo global ya que solo tienen un máximo local por lo que la probabilidad en estos dos casos es de 1 (Siempre se encuentra el máximo global).
+
+En los otros dos casos hay que calcular las probabilidades de hallar el máximo global ya que en la función 2 hay dos máximos locales y en el caso de la función 4 se complica aún más ya que hay muchos máximos locales.
+
+Para calcular estas probabilidades podemos tomar dos opciones, la forma visual y la forma experimental.
+
+### Forma visual
+Esta forma es la más sencilla pero es más inexacta que la forma analítica (con fórmulas) y que la forma experimental.
+Veamos las gráficas:
+
+#### Función 2
+
+```{r echo=FALSE}
+image(x,y,matriz2,col=plasma(30))
+```
+
+Como vemos por los colores en la gráficay siguiendo con lo obtenido en el algoritmo de Monte-Carlo (tirando 10 paracaidistas) hay 2 máximos locales y hay una gran "grieta" que recorre la gráfica y la separa más o menos por la mitad por lo que podemos aproximar la probabilidad de obtener el máximo global y decir que es del \textbf{50}%.
+
+
+#### Función 4
+Como vemos por los colores y observando los resultados obtenidos con el algoritmo al tirar 40 paracaidistas, hay al menos 8 máximos locales (hay más ya que en los límites de la parte superior por el redondeo de R aparecen máximos). Pero si aplicamos la regla de Laplace (casos favorables entre casos posibles) y miramos el gráfico que está debajo podemos aproximar la probabilidad a \textbf{1/8, aprox 0.125}.
+```{r echo=FALSE}
+image(x,y,matriz4,col=plasma(30))
+```
+
+### Forma experimental
+La forma experimental que se plantea a continuación nos permite estimar de manera más exacta la probabilidad de cada función.
+
+En mi caso, realizo 2500 tiradas para cada función, más concretamente cojo un intervalo de puntos de 1 a 50 paracaidistas y repito 50 veces ese procedimiento (los números son arbitrarios). Como al dibujar las gráficas anteriormente ya saqué el valor del máximo absoluto, en cada una de las tiradas miro a ver el número de éxitos (consideramos éxito si el camino llega al máximo absoluto).
+
+Entonces siguiendo con la regla de Laplace calculamos casos de éxito entre casos totales para sacar esa estimación de la probabilidad.
+Para esto he hecho otra función que hace lo mismo que pintar pero sin dibujar la gráfica y devolviendo la probabilidad de éxito.
+```{r}
+probabilidad<-function(matriz,m,maximoabs){
+  cont<-0
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  xs<-sample(1:n,m, replace = TRUE)
+  ys<-sample(1:n,m, replace = TRUE)
+  maximo<--100
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i]) #Elegimos el punto de inicio
+    
+    while(1){
+      valores<-c(matriz[ini[1],ini[2]],matriz[ini[1]+1,ini[2]],matriz[ini[1]-1,ini[2]],
+                 matriz[ini[1],ini[2]+1],matriz[ini[1],ini[2]-1])
+      maximorel<-max(valores)
+      valmax<-which.max(valores)
+      if (valmax==1){
+        break;
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+      }
+    }
+    if (maximorel==maximoabs){
+      cont<-cont+1
+    }
+    if(maximorel>maximo){
+      maximo<-maximorel
+      coordenadas<-c(ini[1]-1, ini[2]-1)
+    }
+  }
+  prob<-cont/m
+  maximo<-c(maximo,coordenadas)
+  return(prob)
+}
+```
+Entonces he usado para cada función de las propuestas para análisis:
+```{r eval=FALSE}
+#Funcion 2
+probb<-0
+for (i in 1:50){
+  for (j in 1:50){
+    probb<-probb+probabilidad(matriz2,i,maximos[2,1])
+  }
+}
+probb<-probb/2500
+
+#Funcion 4
+probd<-0
+for (i in 1:50){
+  for (j in 1:50){
+    probd<-probd+probabilidad(matriz4,j,maximos[4,1])
+  }
+}
+probd<-probd/2500
+```
+Obtenemos para f2 una estimacion de la probabilidad de hallar el máximo global de:
+```{r echo=FALSE}
+#El codigo anterior no lo evaluo porque si no llevaria mucho tiempo de ejecucion
+probb<-0.4996574
+probb
+```
+Para f4 obtenemos la estimacion de la probabilidad de hallar el máximo global de:
+```{r echo=FALSE}
+probd<-0.1084473
+probd
+```
+
+### Conclusión:
+\begin{itemize}
+  \item \textbf{Para el caso de la función 2}, la estimación obtenida mediante ambos métodos es muy parecida (hay un error de poco más de una centésima).
+  \item \textbf{Para el caso de la función 4}, la estimación obtenida en el método experimental es inferior a la estimación visual, esto se debe a que en el borde superior aparecen algunos máximos locales que no habíamos tenido en cuenta y el tamaño de los 8 montículos que habíamos contado no era el mismo.
+\end{itemize}
+
+## Pregunta 2: Para al menos una función: Comparar el tiempo de cómputo necesario para encontrar el máximo valor de la matriz recorriéndola entera, o usando el algoritmo de paracaidistas con al menos un 98% de probabilidades de encontrar el máximo global.
+En mi caso he decidido calcular ese valor para la \textbf{función 4}.
+
+Para hallar el número de paracaidistas para asegurar al 98% de probabilidades de hallar el máximo global usaremos la estimación obtenida experimentalmente en la pregunta anterior (p=0.1084473).
+
+Para despejar n usaremos no la p propuesta si no su complementario (probabilidad de no hallar el máximo global = 1-0.1084473 = 0.8915527).
+Entonces tenemos que reducir la probabilidad de que no se haya encontrado el máximo global en ninguna tirada a 0.02.
+
+Como cada tirada es independiente de la anterior:
+
+P(No hallar el máximo en ninguna tirada)= 0.8915527 * 0.8915527 * 0.8915527...
+
+Entonces tenemos que despejar la n para \ $0.8915527^n$\=0.02, con lo que al despejar queda \textbf{n=35 tiradas para asegurar encontrar el máximo global al 98}%.
+
+Entonces para comparar tiempos:
+
+\textbf{Recorriendo toda la matriz}
+```{r}
+t<-proc.time()
+maxrecorrido<--100
+for (i in 1:n){
+  for (j in 1:n){
+    if (matriz4[i,j]>maxrecorrido){
+      maxrecorrido<-matriz4[i,j]
+    }
+  }
+}
+tiemporecorrido<-proc.time()-t
+maxrecorrido
+tiemporecorrido
+```
+\textbf{Con el hillclimbing con 35 paracaidistas}: he usado una variación de las funciones pintar y probabilidad (elimino el calculo de probabilidad).
+```{r}
+comprobacion<-function(matriz,m){
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  xs<-sample(1:n,m)
+  ys<-sample(1:n,m)
+  maximo<--100
+  #Soltamos los paracaidistas m veces
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i]) #Elegimos el punto de inicio
+    while(1){
+      valores<-c(matriz[ini[1],ini[2]],matriz[ini[1]+1,ini[2]],
+                 matriz[ini[1]-1,ini[2]],matriz[ini[1],ini[2]+1],matriz[ini[1],ini[2]-1])
+      maximorel<-max(valores)
+      valmax<-which.max(valores)
+      if (valmax==1){
+        break;
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+      }
+    }
+    #Comprobamos si es un maximo absoluto o solo local
+    if(maximorel>maximo){
+      maximo<-maximorel
+    }
+  }
+  return(maximo)
+}
+t<-proc.time()
+comprobacion(matriz4,35)
+tiempohill<-proc.time()-t
+tiempohill
+```
+### Conclusión
+Aunque estemos trabajando con tiempos muy bajos en ambos casos, se observa en los resultados obtenidos que \textbf{el algoritmo hillclimbing con paracaidistas es mucho más eficiente que recorrer toda la matriz}

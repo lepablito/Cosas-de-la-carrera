@@ -1,0 +1,271 @@
+---
+title: "Practica Propuesta 1"
+author: Pablo Marcos Parra
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# EJERCICIO 1
+
+ La hoja de datos \textbf{usair026(library(eftar))} contiene datos para estudiar la concentración de dióxido de azufre en el aire (medida en microgramos por metro cúbico) de 41 ciudades de los EEUU de América como función de una serie de variables climáticas y de población. Los datos están generalmente calculados como las medias entre los años 1969 y 1971.
+
+Se tienen 41 observaciones de las variables:
+
+\textbf{y:} Concentración de dióxido de azufre ($SO_2$) en el aire
+
+\textbf{x1:} Media anual de temperatura (ºF)
+
+\textbf{x2:} Número de fábricas con más de 20 empleados
+
+\textbf{x3:} Tamaño de la población en miles de habitantes en el censo de 1970
+
+\textbf{x4:} Velocidad de viento media anual en millas por hora
+
+\textbf{x5:} Precipitación media anual en millas por hora
+
+\textbf{x6:} Número medio de días con precipitación
+\newpage
+
+## Apartado A
+
+\textbf{Estima los coeficientes del modelo lineal en el que la variable respuesta es la concentración de dióxidode azufre ($SO_2$) en el aire y las variables explicativas son el resto de variables. Calcula los p-valores delos tests parciales de todos los coeficientes (salvo el término independiente). Estima los coeficientes del modelo lineal en el que se elimina la variable explicativa con un p-valor mayor y calcula los p-valores delos test parciales para este nuevo modelo. Con estos p-valores y el coeficiente de determinación decidecuál de los dos modelos es preferible utilizar.}
+
+```{r eftar}
+library(eftar)
+attach(usair026)
+mod1<-lm(y ~ ., data=usair026); mod1
+summary(mod1)
+```
+Al hacer \textit{summary} estamos obteniendo los p-valores de los test parciales. Como se puede observar, la variable que eliminaremos es la variable \textbf{x6} ya que es la que tiene un p-valor mayor (0.749972). Planteo ahora el modelo nuevo sin esa variable:
+```{r}
+mod2<-update(mod1,. ~ . - x6); mod2
+summary(mod2) #En este caso no hay ninguno que sea no significativo
+```
+
+Ahora debemos elegir cuál de los dos modelos usaremos de aquí en adelante. Para ello nos fijaremos en el R cuadrado ajustado (información que también nos da \textit{summary}). Como el R cuadrado del segundo modelo es mayor que el del primer modelo, \textbf{nos quedaremos y trabajaremos con ese segundo modelo (el que no tiene x6).}
+\newpage
+
+## Apartado B
+
+\textbf{Calcular los p-valores de los test secuenciales para ver si las variables climáticas (\textbf{x1,x4,x5 y x6}) que se incluyen en el modelo y las variables sobre la población (\textbf{x2 y x3}) para contrastar si aportan algo al conocimiento de la variable respuesta. Realizar los mismos contrastes en orden inverso.}
+
+```{r}
+m0<-lm(y ~ 0)
+m1<-lm(y ~ 1)
+m2<-lm(y ~ x1 + x4 + x5)
+m3<-lm(y ~ x1 + x3 + x5 + x2 + x3)
+anova(m0,m1,m2,m3)
+```
+
+Como vemos, como los p-valores son muy pequeños podemos decir que todas las varables aportan conocimiento a la variable respuesta.
+
+Ahora veremos el mismo contraste en orden inverso:
+```{r}
+m2<-lm(y ~ x2 + x3)
+m3<-lm(y ~ x2 + x3 + x1 + x4 + x5)
+anova(m0,m1,m2,m3)
+```
+De manera inversa también obtenemos p-valores muy pequeños.
+\newpage
+
+## Apartado C
+
+\textbf{Calcula, según el modelo ajustado, cual sería la predicción para la concentración de dióxido de azufre yun intervalo de predicción del 99 por ciento en una ciudad con los mismos valores de las variables explicativas que Cincinnati.}
+
+Usaremos para este apartado, el segundo modelo (aunque con el primer modelo se haría de manera análoga):
+
+```{r}
+datos<-cbind(usair026[26,]) #bindeamos la fila 26 (cincinnati) a la variable datos
+predict(mod2,newdata = datos,interval="confidence",level = 0.99)
+```
+\newpage
+
+# EJERCICIO 2
+
+La hoja de datos esparragos (\textit{library(eftar)}) contiene 40 observaciones de las variables:
+
+\textbf{clase}:Clase de espárrago.
+
+\textbf{peso}:Peso del espárrago en gramos.
+
+\textbf{fibra.sensorial}:Peso de la cantidad de fibra sensorial del espárrago en gramos.
+
+La fibra sensorial es la cantidad de fibra del espárrago blanco que el consumidor es capaz de detectar sensorialmente. Para realizar esta medida se diseña un procedimiento que simula el proceso de masticación. Como el peso de la cantidad de fibra sensorial está relacionado con el peso del espárrago dentro de cada una de las clases, resulta más conveniente utilizar como \textbf{variable respuesta la proporción (o tanto por ciento) del peso del espárrago que corresponde a la fibra sensorial}. El interés de los datos está en estudiar como varía la cantidad de fibra sensorial según la clase de los espárragos.
+
+Se toman 8 observaciones de cada una de las siguientes clases de espárragos blancos. Los niveles c.china y c.peru corresponden a espárragos blancos extra en conserva originarios de China y Perú, mientras que el resto de los niveles corresponden a espárragos frescos. Los espárragos del nivel navarra son espárragos blancos frescos denominación de origen Navarra. Por último, las dos variedades de espárrago blanco fresco que se producen en Tudela de Duero Jacques Marionnet 2001 y thielim corresponden a los niveles td.jm2001y td.thielim. 
+
+Todos los p-valores pedidos se deben realizar dos veces una: con la función linearHypothesis de library(car)y otra con la función anova.
+```{r}
+library(car)
+attach(esparragos)
+```
+\newpage
+
+## Apartado A
+\textbf{Calcula los valores observados de la variable respuesta y representala en un diagrama de cajas múltiple agrupando por la clase del espárrago.}
+
+```{r}
+y<-fibra.sensorial*100/peso
+esparragos<-cbind(esparragos,y)
+plot(clase,y,col= c("red", "red4", "green","lawngreen","lightgreen"))
+```
+
+A la hora de realizar cualquier procedimiento anova usaremos lo siguiente:
+```{r}
+Z<-diag(nlevels(clase)) [clase,]
+f<- clase
+Z<-diag(nlevels(f))[f,]
+modelo1 <- lm(y ~ Z-1,); 
+modelo1
+```
+Este \textit{modelo1} es el modelo de la regresión lineal inicial para estos datos.
+\newpage
+
+## Apartado B
+
+\textbf{Utiliza el modelo lineal en el que los coeficientes vienen dados por la media de la variable respuesta dentro de cada clase de espárrago para estimar estos parámetros. Comprueba que estas estimaciones coinciden con las medias muestrales.}
+
+Ya tenemos el modelo, ahora veremos si coincide:
+```{r}
+modelo1
+tapply(y,clase,mean)
+```
+Como vemos en los resultados, efectivamente coinciden las estimaciones con las medias muestrales (truncadas a dos decimales).
+\newpage
+
+## Apartado C
+
+\textbf{Calcula el p-valor del test que contrasta si existe diferencia en cuanto a la fibra sensorial en las cinco clases de espárragos.}
+
+El contraste pedido es:
+$$H_0: \mu_1 = \mu_2 = \mu_3 = \mu_4 = \mu_5$$
+```{r}
+H0 <-cbind(1,-diag(4));
+
+
+R <- rbind(c(1,0,0,0,0),H0); R
+R1 <- solve(R); R1
+X <- Z %*% R1;
+modeloA <- lm(y ~ 0 +X[,1]);
+linearHypothesis(modelo1,H0)
+anova(modeloA, modelo1)
+```
+El p-valor obtenido es muy pequeño por lo que que podemos rechazar $H_0$, rechazar la igualdad de medias.
+\newpage
+
+## Apartado D
+
+\textbf{Calcula el p-valor del test que contrasta si existe diferencia en cuanto a la fibra sensorial entre los espárragos frescos y los espárragos en conserva.}
+
+El contraste pedido es:
+$$H_0: \frac{\mu_1 + \mu_2}2 = \frac{\mu_3 + \mu_4 + \mu_5}3$$
+```{r}
+H1 <-c(3,3,-2,-2,-2)
+
+R <- rbind(H1, cbind(diag(4),0)); R
+R1 <- solve(R); R1
+X <- Z %*% R1;
+modeloD <- lm(y ~ X[,-1])
+linearHypothesis(modelo1,H1)
+anova(modeloD, modelo1)
+```
+El p-valor obtenido es muy pequeño por lo que podemos rechazar $H_0$, podemos rechazar igualdad de medias entre los espárragos frescos y de conserva.
+\newpage
+
+## Apartado E
+
+\textbf{Calcula el p-valor del test que contrasta si existe diferencia en cuanto a la fibra sensorial entre las dos clases de espárragos en conserva.}
+
+El contraste pedido es:
+$$H_0: \mu_1=\mu_2$$
+```{r}
+H2 <-c(1,-1,0,0,0)
+
+R <- rbind(H2,c(3,3,-2,-2,-2),c(0,1,-1,-1,0),c(0,0,1,-1,-1),c(1,1,1,1,1))
+R1 <- solve(R); R1
+X <- Z %*% R1;
+modeloE <- lm(y ~ X[,-1])
+linearHypothesis(modelo1,H2)
+anova(modeloE, modelo1)
+```
+El p-valor obtenido es muy pequeño por lo que podemos rechazar $H_0$, podemos rechazar la igualdad de medias entre los espárragos en conserva.
+\newpage
+
+## Apartado F
+
+\textbf{Calcula el p-valor del test que contrasta si existe diferencia en cuanto a la fibra sensorial entre las tres clases de espárragos frescos.}
+
+El contraste pedido es:
+$$H_0: \mu_3=\mu_4=\mu_5$$
+$$H_1: Alguna~~  es~~  distinta.$$
+Para realizar este contraste lo haremos en dos etapas, es decir, primero contrastaremos $\mu_3=\mu_4$ y luego contrastaremos $\mu_4=\mu_5$.
+Primero contrastaremos:
+$$H_0: \mu_3=\mu_4$$
+```{r}
+H30<-c(0,0,1,-1,0) #mu3=mu4
+H31<-c(0,0,0,1,-1) #mu4=mu5
+
+R <- rbind(H30,H31,c(0,1,-1,-1,0),c(0,0,1,-1,-1),c(1,1,1,1,1));R
+R1 <- solve(R); R1
+X <- Z %*% R1;
+modeloF0 <- lm(y ~ X[,-1])
+
+linearHypothesis(modelo1,H30)
+anova(modeloF0, modelo1)
+```
+Como se puede observar, para la matriz R hemos usado ambas hipótesis para así luego no repetir calculos.
+El p-valor que obtenemos para este primer contraste es bastante alto, por lo que no podemos rechazar la igualdad $\mu_3=\mu_4$. 
+
+Como no podemos rechazar la hipótesis, entonces si ahora contrastamos $\mu_4=\mu_5$ y no lo rechazamos, podremos decir que no rechazamos la hipótesis de igualdad inicial $\mu_3=\mu_4=\mu_5$.
+
+$$H_0: \mu_4=\mu_5$$:
+```{r}
+modeloF1 <- lm(y ~ X[,-2]) #Reutilizamos la X del contraste anterior
+
+linearHypothesis(modelo1,H31)
+anova(modeloF1, modelo1)
+```
+El p-valor en este caso es bastante alto, por lo que no podemos rechazar la hipótesis de igualdad $\mu_4=\mu_5$. Como no rechazamos este contraste ni el anterior, entonces podemos decir que NO podemos rechazar el $H_0$ inicial que era igualdad entre la media de los espárragos frescos.
+\newpage
+
+## Apartado G
+
+\textbf{Calcula el p-valor del test que contrasta si existe diferencia en cuanto a la fibra sensorial entre losespárragos frescos de Navarra y los espárragos frescos de Tudela de Duero.}
+
+El contraste pedido es:
+$$H_0: \mu_3=\frac{\mu_4+\mu_5}2$$
+```{r}
+H4<-c(0,0,1,-1/2,-1/2)
+
+R <- rbind(H4,c(3,3,-2,-2,-2),c(0,1,-1,-1,0),c(0,0,0,1,-1),c(1,1,1,1,1))
+R1 <- solve(R);
+X <- Z %*%R1
+modeloG<-lm(y ~ 0 + X[,-1])
+linearHypothesis(modelo1,H4)
+anova(modeloG, modelo1)
+```
+Como el p-valor obtenido es bastante alto, no podemos rechazar $H_0$ que era la igualdad de medias entre los esparragos de Navarra y los de Tudela de Duero.
+\newpage
+
+## Apartado H
+
+\textbf{Calcula el p-valor del test que contrasta si existe diferencia en cuanto a la fibra sensorial entre las dosclases de espárragos frescos de Tudela de Duero.}
+
+Este contraste lo hemos hecho en el apartado F, pero vuelvo a realizarlo aquí por separado.
+
+El contraste pedido es:
+$$H_0: \mu_4=\mu_5$$
+
+```{r}
+H5<-c(0,0,0,1,-1)
+```
+Si nos fijamos, en el apartado anterior en la matriz R, la cuarta fila que hay es la que corresponde a este contraste por lo que volvemos a usar esa matriz.
+```{r}
+modeloH<-lm(y ~ 0 + X[,-4])
+linearHypothesis(modelo1,H5)
+anova(modeloH, modelo1)
+```
+El p-valor en este caso también es bastante alto, por lo que no podemos rechazar $H_0$, es decir la igualdad de medias entre los espárragos de Tudela de Duero.

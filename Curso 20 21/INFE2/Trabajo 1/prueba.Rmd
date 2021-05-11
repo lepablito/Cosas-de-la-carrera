@@ -1,0 +1,29 @@
+---
+title: "Práctica 1"
+author: "Pablo Marcos Parra / Sofía Mara Rivas Cuevas"
+date: "3/11/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Enunciado de la práctica
+
+Considerar una muestra aleatoria de tamaño n = 30 de una población cuya distribución es una mixtura
+de dos distribuciones exponenciales con funciones de densidad:
+
+![Funciones de densidad](funciones.png)
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

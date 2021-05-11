@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <style>
+        table {
+            overflow-y: auto;
+            border: 1px solid black;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+        }
+
+        #lista {
+            width: 400px;
+            height: 505px;
+            overflow-y: scroll;
+            scroll-behavior: smooth;
+        }
+
+        label {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: bold;
+        }
+
+        #sources {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #grafico {
+            float: left;
+        }
+
+        #ranking {
+            float: left;
+        }
+
+        #valores {
+            clear: both;
+        }
+
+        #seleccion {
+            text-align: center;
+        }
+
+        body {
+            width: auto;
+            height: auto;
+        }
+    </style>
+    <title>Ranking de felicidad por países :)</title>
+    <meta charset="utf-8">
+    <script src="d3.v5.min.js"></script>
+</head>
+
+<body>
+    <h1>Puntuacion de felicidad por paises :)</h1>
+    <div id="contenedor">
+        <div id="grafico">
+        </div>
+        <div id="ranking">
+            <div id="seleccion">
+                <label>Ranking: </label>
+                <select id="orden">
+                    <option selected value="masfeliz">De más felices a menos felices</option>
+                    <option value="menosfeliz">De menos felices a más felices</option>
+                </select>
+                <br>
+            </div>
+            <div id="lista"></div>
+        </div>
+    </div>
+    </div>
+    <div id="valores">
+        <div>
+            <label>Región</label>
+            <select id="region">
+                <option selected value="mundo">Mundo</option>
+                <option value="europe">Europa</option>
+                <option value="northamerica">Norteamérica</option>
+                <option value="southamerica">Sudamérica</option>
+                <option value="asia">Asia</option>
+                <option value="africa">África</option>
+                <option value="oceania">Oceanía</option>
+            </select>
+            <br>
+            <label>Año</label>
+            <input type="radio" name="year" value="2015" onchange="cambio()" checked>
+            <label for="2015">2015</label>
+            <input type="radio" name="year" value="2016" onchange="cambio()">
+            <label for="2016">2016</label>
+            <input type="radio" name="year" value="2017" onchange="cambio()">
+            <label for="2017">2017</label>
+            <input type="radio" name="year" value="2018" onchange="cambio()">
+            <label for="2018">2018</label>
+            <input type="radio" name="year" value="2019" onchange="cambio()">
+            <label for="2019">2019</label>
+        </div>
+        <div id="sources">
+            Sources: <a href="https://www.kaggle.com/unsdsn/world-happiness">World Happiness Report</a> / <a
+                href="https://geojson-maps.ash.ms/">Ash Kyd GeoJSON</a>
+            <br>
+
+            Contexto: en el año 2015 se realizó un estudio en diferentes países en el que se realizaba la pregunta "¿Qué
+            puntuación sobre 10
+            darías a tu felicidad?"
+        </div>
+    </div>
+    <script src="mapaytabla.js" async defer></script>
+    <script>
+        //Esto sirve para resetear el scrollbar
+        let cambioRegion = document.getElementById("region");
+        let cambioOrden = document.getElementById("orden");
+        cambioRegion.addEventListener('change', (event) => {
+            cambio();
+        });
+        cambioOrden.addEventListener('change', (event) => {
+            cambio();
+        });
+        function cambio() {
+            let elemento = document.getElementById("lista");
+            elemento.scrollTo(0, 0);
+        }
+    </script>
+</body>
+
+</html>

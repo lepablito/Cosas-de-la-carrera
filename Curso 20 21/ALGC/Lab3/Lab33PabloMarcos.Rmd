@@ -1,0 +1,472 @@
+---
+title: "Laboratorio 3.3 Pablo Marcos"
+author: "Pablo Marcos Parra"
+date: "20/11/2020"
+output: pdf_document
+---
+
+# Optimizando las búsquedas probabilísticas
+
+## Tarea 1
+
+### 1. Utilizar la representación gráfica del mapa de calor o similar con la siguiente función:
+
+g(x,y) = cos((x*x+y*y)*12)/(2*((x*x+y*y)*6.28+1))  Rango [-1:2][-1:2]
+```{r}
+library(RColorBrewer)
+library(reshape2)
+library(viridis)
+palette(plasma(30)) #paleta de colores
+##################################################################################
+n<-1000#NUMERO PUNTOS
+x<-seq(-1,2,length.out = n)
+y<-x
+
+#FUNCION PARA CREAR LA MATRIZ
+funciont1<-function(x,y,n){
+  res<-c()
+  for(i in x){
+    fil<-c()
+    for (j in y){
+      fil<-append(fil,cos((i*i+j*j)*12)/(2*((i*i+j*j)*6.28+1)))
+    }
+    res<-rbind(res,fil)
+  }
+  rownames(res)<-x #titulos de las filas son los valores de x
+  colnames(res)<-y #titulos de las columnas son los valores de y
+  return(res)
+}
+#CREAMOS LA MATRIZ
+matrizt1<-funciont1(x,y,n)
+```
+
+```{r eval=FALSE}
+#PINTAMOS LA MATRIZ
+image(x,y,matrizt1,col=plasma(30))
+```
+### 2.Analizando el dibujo o usando un método experimental,  calcular cuántos lanzamientos serían necesarios para que la probabilidad de haber obtenido el máximo global sea p = 0.999
+  Para mí visualmente me resulta más complicado por lo que lo haremos experimentalmente.
+  Usamos la función para hallar el máximo global:
+```{r}
+calculamax<-function(matriz,m){
+  #Añadimos los bordes para evitar errores
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  
+  #Sacamos una lista "aleatoria" de puntos
+  xs<-sample(1:n,m)
+  ys<-sample(1:n,m)
+  maximo<--100
+  
+  #Soltamos los paracaidistas m veces
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i]) #Elegimos el punto de inicio
+    #Mientras el maximo (relativo o absoluto) no se haya encontrado lo busca
+    while(1){
+      valores<-c(matriz[ini[1],ini[2]],matriz[ini[1]+1,ini[2]],
+                 matriz[ini[1]-1,ini[2]],matriz[ini[1],ini[2]+1],matriz[ini[1],ini[2]-1])
+      maximorel<-max(valores)
+      valmax<-which.max(valores)
+      if (valmax==1){
+        #Si hemos encontrado un maximo local
+        break;
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+      }
+    }
+    #Comprobamos si es un maximo absoluto o solo local
+    if(maximorel>maximo){
+      maximo<-maximorel
+      coordenadas<-c(ini[1]-1, ini[2]-1)
+    }
+  }
+  maximo<-c(maximo,coordenadas)
+  return(maximo)#Devolvemos el valor del maximo y el punto en el que esta en la matriz
+}
+```
+En mi caso para hallar el máximo uso un número grande (arbitrario) para asegurarme de encontrar el máximo global:
+```{r}
+maximos<-rbind(calculamax(matrizt1,100))
+```
+Una vez hallado el máximo sacamos ahora la probabilidad de hallarlo usando lo mismo que en el informe del laboratorio 3.2:
+```{r}
+probabilidad<-function(matriz,m,maximoabs){
+  cont<-0
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  xs<-sample(1:n,m, replace = TRUE)
+  ys<-sample(1:n,m, replace = TRUE)
+  maximo<--100
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i]) #Elegimos el punto de inicio
+    
+    while(1){
+      valores<-c(matriz[ini[1],ini[2]],matriz[ini[1]+1,ini[2]],matriz[ini[1]-1,ini[2]],
+                 matriz[ini[1],ini[2]+1],matriz[ini[1],ini[2]-1])
+      maximorel<-max(valores)
+      valmax<-which.max(valores)
+      if (valmax==1){
+        break;
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+      }
+    }
+    if (maximorel==maximoabs){
+      cont<-cont+1
+    }
+    if(maximorel>maximo){
+      maximo<-maximorel
+      coordenadas<-c(ini[1]-1, ini[2]-1)
+    }
+  }
+  prob<-cont/m
+  maximo<-c(maximo,coordenadas)
+  return(prob)
+}
+
+probt1<-0
+for (i in 1:50){
+  for (j in 1:50){
+    probt1<-probt1+probabilidad(matrizt1,i,maximos[1,1])
+  }
+}
+probt1<-probt1/2500
+probt1
+```
+Entoces para hallar el n pedido tenemos que hacer como lo explicado en el informe del laboratorio 3.2:
+
+p(no sacar el global)=0.9135827
+
+p(Algun exito)=0.9135827*0.9135827*0.9135827...= 0.9135827^n=0.001
+
+Despejamos y obtenemos \textbf{n=77}
+
+## Tarea 2
+
+### 1. Copia el programa MonteCarlo y quítale/comenta la parte gráfica.
+```{r}
+comprobacion<-function(matriz,m){
+  #creamos limites para evitar fallos
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  #creamos los puntos aleatorios para los paracaidistas
+  xs<-sample(1:n,m)
+  ys<-sample(1:n,m)
+  maximo<--100
+  #Soltamos los paracaidistas m veces
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i]) #Elegimos el punto de inicio
+    while(1){
+      valores<-c(matriz[ini[1],ini[2]],matriz[ini[1]+1,ini[2]],
+                 matriz[ini[1]-1,ini[2]],matriz[ini[1],ini[2]+1],matriz[ini[1],ini[2]-1])
+      maximorel<-max(valores)#Escoge el valor maximo
+      valmax<-which.max(valores)#Devuelve el indice del valor maximo
+      if (valmax==1){
+        break;
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+      }
+    }
+    #Comprobamos si es un maximo absoluto o solo local
+    if(maximorel>maximo){
+      maximo<-maximorel
+    }
+  }
+  return(maximo)
+}
+```
+### 2. Haz pruebas de tiempo con la siguiente función, con una matriz de 2000 x 2000 puntos y suficientes casos de prueba para que la búsqueda Monte Carlo (sólo esa parte) tarde un par de segundos al menos. Mide por separado el tiempo de inicialización y las búsquedas. Asegurate de usar semillas para poder reproducir los experimentos.
+
+h(x,y) = x/(x*x+1) - y/(y*y+1) + 2*(sqrt(x*x+y*y)-1)/((sqrt(x*x+y*y)-1)*(sqrt(x*x+y*y)-1)+1)   Rango [-6:6][-6:6]
+```{r}
+#FUNCION PARA CREAR LA MATRIZ TAREA 2
+funciont2<-function(x,y,n){
+  res<-c()
+  for(i in x){
+    fil<-c()
+    for (j in y){
+      fil<-append(fil,i/(i*i+1) - j/(j*j+1) + 2*(sqrt(i*i+j*j)-1)/((sqrt(i*i+j*j)-1)*(sqrt(i*i+j*j)-1)+1))
+    }
+    res<-rbind(res,fil)
+  }
+  rownames(res)<-x #titulos de las filas son los valores de x
+  colnames(res)<-y #titulos de las columnas son los valores de y
+  return(res)
+}
+t<-proc.time()
+matrizt2<-funciont2(x,y,n)
+tiempoinicializacion<-proc.time()-t
+tiempoinicializacion #Tiempo en crear la matriz 2000x2000
+set.seed(69420)#Establecemos una semilla para que los experimentos sean reproducibles
+t<-proc.time()
+maximot2<-comprobacion(matrizt2,1000)
+tiempo<-proc.time()-t
+tiempo #Tiempo en tirar los 1000 paracaidistas
+```
+### 3.Modifíca el programa eliminando el cálculo inicial de los valores de la matriz con la fórmula. Implementa la técnica de calcular sólo los valores de la función que se necesitan durante la búsqueda, anotándolos en la matriz (cuidado con los valores iniciales de la matriz). Comprueba que da los mismos resultados que el programa no modificado. Vuelve a medir con el escenario anterior (misma función, tamaño de matriz, número de puntos y semilla).
+En este apartado se manda calcular en cada vuelta del algoritmo los valores que se nos piden durante la busqueda y anotarlos en la matriz:
+```{r}
+onfly<-function(matriz,m){
+  xx<-seq(-6,6,length.out = n)
+  yy<-xx
+  #añadimos bordes
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  xs<-sample(1:n,m)
+  ys<-sample(1:n,m)
+  maximo<--100
+  #Soltamos los paracaidistas m veces
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i])
+    while(1){
+      i1<-xx[ini[1]]
+      j1<-yy[ini[2]]
+      #Calculamos el punto
+      punto<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+      matriz[ini[1],ini[2]]<-punto
+      
+      if(ini[1]==n){#Si estamos en un borde metemos -100 para evitar errores
+        puntoderecha<--100
+      }else{
+        if(is.na(matriz[ini[1]+1,ini[2]])){#Si no ha sido calculado antes se calcula
+          i1<-xx[ini[1]+1]
+          puntoderecha<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+          matriz[ini[1]+1,ini[2]]<-puntoderecha
+        }else{#Si ha sido calculado antes se saca de la memoria
+          puntoderecha<-matriz[ini[1]+1,ini[2]]
+        }
+      }
+      if(ini[1]==1){
+        puntoizquierda<--100
+      }else{
+        if(is.na(matriz[ini[1]-1,ini[2]])){
+          i1<-xx[ini[1]-1]
+          puntoizquierda<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+          matriz[ini[1]-1,ini[2]]<-puntoizquierda
+        }else{
+          puntoizquierda<-matriz[ini[1]-1,ini[2]]
+        }
+      }
+      i1<-xx[ini[1]]
+      
+      if(ini[2]==n){
+        puntoarriba<--100
+      }else{
+        if(is.na(matriz[ini[1],ini[2]+1])){
+          j1<-yy[ini[2]+1]
+          puntoarriba<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+          matriz[ini[1], ini[2]+1]<-puntoarriba
+        }else{
+          puntoarriba<-matriz[ini[1],ini[2]+1]
+        }
+      }
+      
+      if(ini[2]==1){
+        puntoabajo<--100
+      }else{
+        if(is.na(matriz[ini[1],ini[2]-1])){
+          j1<-yy[ini[2]-1]
+          puntoabajo<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+          matriz[ini[1], ini[2]-1]<-puntoabajo
+        }else{
+          puntoabajo<-matriz[ini[1],ini[2]-1]
+        }
+      }
+      
+      j1<-xx[ini[2]]
+      #Hallamos el máximo de los 5 puntos
+      valores<-c(punto,puntoderecha,puntoizquierda,puntoarriba,puntoabajo)
+      maximorel<-max(valores)
+      valmax<-which.max(valores)
+      
+      if (valmax==1){
+        break
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+      }
+    }
+    #Comprobamos si es un maximo absoluto o solo local
+    if(maximorel>maximo){
+      maximo<-maximorel
+    }
+  }
+  print(maximo)
+  #Eliminamos los bordes sobrantes
+  matriz<-matriz[,-1]
+  matriz<-matriz[,-(n+1)]
+  matriz<-matriz[-1,]
+  matriz<-matriz[-(n+1),]
+  return(matriz)
+}
+```
+Entonces obtenemos el siguiente resultado:
+```{r}
+#CREAMOS MATRIZ VACIA
+nuevamatrizt2<-matrix(nrow=n,ncol=n)
+#CALCULAMOS EL MAXIMO Y LA MATRIZ
+t<-proc.time()
+nuevamatrizt2<-onfly(nuevamatrizt2,1000)
+tiempoonfly<-proc.time()-t
+tiempoonfly
+```
+### 4. Modifica el programa para que cuando una búsqueda se encuentra con un camino ya explorado no continúe y salte a la siguiente búsqueda. Comprueba que da los mismos resultados. Vuelve a medir con el escenario anterior (misma función, tamaño de matriz y número de puntos y semilla).
+En este caso se pide que basandonos en el programa anterior, podemos la búsqueda si el punto ya habia sido recorrido con anterioridad.
+```{r}
+yarecorrido<-function(matriz,m){
+  xx<-seq(-6,6,length.out = n)
+  yy<-xx
+  #añadimos bordes
+  matriz<-cbind(rep(-100,n),matriz,rep(-100,n)) 
+  matriz<-rbind(rep(-100,n+2),matriz,rep(-100,n+2))
+  xs<-sample(1:n,m)
+  ys<-sample(1:n,m)
+  maximo<--100
+  #Soltamos los paracaidistas m veces
+  for (i in 1:m){
+    ini<-c(xs[i],ys[i])
+    while(1){
+      if(!is.na(matriz[ini[1],ini[2]])){
+        break
+      }
+      i1<-xx[ini[1]]
+      j1<-yy[ini[2]]
+      
+      punto<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+      matriz[ini[1],ini[2]]<-punto
+      
+      if(ini[1]==n){
+        puntoderecha<--100
+      }else{
+        if(is.na(matriz[ini[1]+1,ini[2]])){
+          i1<-xx[ini[1]+1]
+          puntoderecha<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+        }
+      }
+      if(ini[1]==1){
+        puntoizquierda<--100
+      }else{
+        if(is.na(matriz[ini[1]-1,ini[2]])){
+          i1<-xx[ini[1]-1]
+          puntoizquierda<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+        }
+      }
+      i1<-xx[ini[1]]
+      
+      if(ini[2]==n){
+        puntoarriba<--100
+      }else{
+        if(is.na(matriz[ini[1],ini[2]+1])){
+          j1<-yy[ini[2]+1]
+          puntoarriba<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+        }
+      }
+      
+      if(ini[2]==1){
+        puntoabajo<--100
+      }else{
+        if(is.na(matriz[ini[1],ini[2]-1])){
+          j1<-yy[ini[2]-1]
+          puntoabajo<-i1/(i1*i1+1) - j1/(j1*j1+1) + 2*(sqrt(i1*i1+j1*j1)-1)/((sqrt(i1*i1+j1*j1)-1)*(sqrt(i1*i1+j1*j1)-1)+1)
+        }
+      }
+      
+      j1<-xx[ini[2]]
+      
+      valores<-c(punto,puntoderecha,puntoizquierda,puntoarriba,puntoabajo)
+      maximorel<-max(valores)
+      valmax<-which.max(valores)
+      
+      if (valmax==1){
+        break
+      }
+      else{
+        if(valmax==2){
+          ini<-c(ini[1]+1,ini[2])
+        }else if(valmax==3){
+          ini<-c(ini[1]-1,ini[2])
+        }else if(valmax==4){
+          ini<-c(ini[1],ini[2]+1)
+        }else{
+          ini<-c(ini[1],ini[2]-1)
+        }
+      }
+    }
+    #Comprobamos si es un maximo absoluto o solo local
+    if(maximorel>maximo){
+      maximo<-maximorel
+    }
+  }
+  print(maximo)
+  #Eliminamos los bordes sobrantes
+  matriz<-matriz[,-1]
+  matriz<-matriz[,-(n+1)]
+  matriz<-matriz[-1,]
+  matriz<-matriz[-(n+1),]
+  return(matriz)
+}
+```
+Obtenemos como resultado:
+```{r}
+#CREAMOS MATRIZ VACIA
+nuevamatrizt2v2<-matrix(nrow=n,ncol=n)
+#CALCULAMOS EL TIEMPO QUE TARDA
+t<-proc.time()
+nuevamatrizt2<-onfly(nuevamatrizt2v2,1000)
+tiempoonflyv2<-proc.time()-t
+tiempoonflyv2
+```
+## Preguntas
+### 1. Explica cómo has generado el mapa de calor y pintado las rutas encima en tu lenguaje de programación.
+Como se ha podido ver he usado R y para crear los mapas de calor con las rutas he usado image() para crear el gráfico y luego con points() he ido pintando cada punto de la ruta.
+
+### 2. Explica como has modificado el código para la Tarea 2 en tu caso particular y cómo has comprobado que los resultados eran correctos (los mismos que en la versión no modificada).
+Para el apartado 2 de la tarea, lo que he hecho ha sido el algoritmo de Monte-Carlo tal y como lo había hecho anteriormente, creando la matriz anteriormente y luego usando la función con 1000 paracaidistas. Finalmente de este apartado he sacado el valor del máximo global para comprobarlo con las modificaciones.
+
+Para el apartado 3, he cogido el codigo del apartado 2 y en vez de crear la matriz previamente le he pasado a la función como parametro una matriz vacía 2000x2000. Dentro de la función la mayor modificación ha sido lo del calculo "on the fly" de los valores pero al trabajar con matrices vacías he tenido que tener cuidado con las fronteras definidas y los NA. Para cada punto realizaba el cálculo y lo guardaba en la matriz. Si ya habia sido calculado anteriormente saco el valor de la memoria en lugar de hacer los cálculos.
+
+En el apartado 4, la modificación que he hecho ha sido solo meter el punto máximo local en la matriz para posteriormente ver si ya había sido usado y podar la búsqueda del camino.
+
+Como se observa en la parte de arriba, el resultado obtenido es el mismo en todos los casos.
+
+### 3.¿Qué conclusiones has obtenido sobre los cambios en el coste al introducir las técnicas de la Tarea 2? ¿Qué versiones son mejores o peores y por qué? ¿Tiene algo que ver la función que estés explorando?
+El orden de eficiencia es Apartado 4 mejor que Apartado 3 mejor que el Apartado 2.
+
+La versión del apartado 2 en la que creo la matriz previamente, es más o menos igual de rápida en la búsqueda que las otras dos versiones, pero el tiempo que tarda en crear la matriz hace que sea mucho más ineficiente.
+
+El apartado 3 y el apartado 4 trabajan sobre la misma base (crean los datos "on the fly, por lo que solo se calculan los datos que se usan, no todos), pero es más eficiente la versión del apartado 4 ya que una vez ya se llega a un camino ya recorrido termina la búsqueda ahorrando los cálculos de tener que hacer el camino hasta el final.

@@ -1,0 +1,49 @@
+
+
+
+
+
+#TRABAJO 1 DE INFERENCIA ESTADISTICA II
+#PABLO MARCOS PARRA / SOFÍA MARA RIVAS CUEVAS
+
+#DATOS DE LA PRACTICA:
+y<-c(0.92169370,0.20110924,0.08299092,1.27148296,0.08975299,2.49922718
+     ,4.34097682,0.39260263,0.06973844,0.05284850,0.40770048,0.03917915
+     ,0.19068404,1.26898667,0.53213247,0.52049674,0.22417266,0.18774498
+     ,0.16727780,0.44944121,1.10100809,0.84404590,0.66023800,2.86944266
+     ,0.08869227,0.85046707,0.41026355,0.28243983,0.07341746,0.10278472)
+
+#APARTADO A)
+f1<-function(y){
+  return(dexp(y,1))
+}
+f2<-function(y){
+  return(dexp(y,2))
+}
+mlv<-function(p){
+  (-sum(log(p*f1(y)+(1-p)*f2(y))))
+}
+minimo<-optim(0.25,mlv,method="Brent",lower = 0, upper = 1,hessian = T)
+EMV<-minimo$par
+V<-as.numeric(solve(minimo$hessian))
+I.C<-c(EMV-qnorm(0.975,0,1)*sqrt(V),EMV+qnorm(0.975,0,1)*sqrt(V))
+
+
+#APARTADO B)
+Tobs<--2*(minimo$value -mlv(0.5))
+pvalor<-1-pchisq(Tobs,1)
+
+
+#APARTADO C)
+#DATOS OBSERVADOS
+DO<-function(y,p){
+  return(p*f1(y)+(1-p)*f2(y))
+}
+p<-0.5 #valor inicial de p
+n<-length(y) #numero de iteraciones realizadas
+for(i in 1:25){
+  p<-(1/n)*sum(p*f1(y)/DO(y,p)) 
+}
+  
+
+
